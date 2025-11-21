@@ -34,5 +34,13 @@ fn main() {
 
 // Initializes the TUI view to view a given filename
 fn start_view(filename: &str) {
-    println!("Opening filename {filename}")
+    println!("Opening filename {filename}");
+
+    // Open the file passed in.
+    let content = std::fs::read_to_string(filename).expect("Failed to read the file");
+
+    // Let's iterate through each line and print it with line numbers.
+    for (index, line) in content.lines().enumerate() {
+        println!("{}: {}", index + 1, line);
+    }
 }
