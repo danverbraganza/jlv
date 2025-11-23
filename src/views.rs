@@ -2,15 +2,17 @@ use std::io;
 
 use color_eyre::Result as cResult;
 
+use crate::model::Record;
+
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 use ratatui::{
     DefaultTerminal, Frame,
     buffer::Buffer,
     layout::Rect,
-    style::Stylize,
+    style::{Style, Stylize},
     symbols::border,
     text::{Line, Text},
-    widgets::{Block, Paragraph, Widget},
+    widgets::{Block, List, ListDirection, Paragraph, Widget},
 };
 
 use crate::input::records_from_file;
@@ -21,28 +23,55 @@ pub fn start_view(filename: &str) -> io::Result<()> {
 
     // Open the file passed in.
     let records = records_from_file(filename);
-
-    for (i, record) in records.iter().enumerate() {
-        println!("{}: {:#?}", i, record)
-    }
+    let a = App { records };
 
     color_eyre::install().expect("This should install");
-
     let terminal = ratatui::init();
-    let result = run(terminal);
+    let result = a.run(terminal);
     ratatui::restore();
     result
 }
 
-fn run(mut terminal: DefaultTerminal) -> io::Result<()> {
-    loop {
-        terminal.draw(render)?;
-        if matches!(event::read()?, Event::Key(_)) {
-            break Ok(());
+struct App {
+    records: Vec<Record>,
+}
+
+impl App {
+    // Starts the view, and runs until keypress.
+    fn run(self, mut terminal: DefaultTerminal) -> io::Result<()> {
+        loop {
+            terminal.draw(|frame| self.draw(frame))?;
+            if matches!(event::read()?, Event::Key(_)) {
+                break Ok(());
+            }
         }
+    }
+
+    fn draw(&self, frame: &mut Frame) {
+        frame.render_widget(self, frame.area());
     }
 }
 
-fn render(frame: &mut Frame) {
-    frame.render_widget("hello world", frame.area());
+impl Widget for &App {
+    fn render(self, area: Rect, buf: &mut Buffer) {
+        let title = Line::from(" jlv - {filename} ".bold());
+        let block = Block::bordered()
+            .title(title.centered())
+            .border_set(border::PLAIN);
+
+        let mut str_v: Vec<String> = vec![];
+        for record in &self.records {
+            str_v.push(format!("{:#?}", record));
+        }
+
+        let list = List::new(str_v)
+            .block(block)
+            .style(Style::new().white())
+            .highlight_style(Style::new().italic())
+            .highlight_symbol(">>")
+            .repeat_highlight_symbol(true)
+            .direction(ListDirection::BottomToTop);
+
+        list.render(area, buf);
+    }
 }
