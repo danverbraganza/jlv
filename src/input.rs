@@ -8,8 +8,8 @@ pub fn records_from_file(filename: &str) -> Vec<Record> {
 
     let mut output = vec![];
 
-    for line in content.lines() {
-        output.push(Record::from_str(line));
+    for (i, line) in content.lines().enumerate() {
+        output.push(Record::from_str(i, line));
     }
 
     output
