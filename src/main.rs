@@ -1,3 +1,5 @@
+use std::io;
+
 use clap::{Parser, command};
 
 mod input;
@@ -18,7 +20,7 @@ struct Cli {
     filename_flag: Option<String>,
 }
 
-fn main() {
+fn main() -> io::Result<()> {
     let cli = Cli::parse();
 
     if cli.debug {
