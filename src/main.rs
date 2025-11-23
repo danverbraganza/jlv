@@ -1,5 +1,9 @@
 use clap::{Parser, command};
 
+mod input;
+mod model;
+mod views;
+
 #[derive(Parser, Debug)]
 #[command(name = "jlv", version, about = "JsonL viewer", long_about = None)]
 struct Cli {
@@ -24,23 +28,10 @@ fn main() {
     let filename = cli.filename.or(cli.filename_flag);
 
     match filename {
-        Some(fname) => start_view(&fname),
+        Some(fname) => views::start_view(&fname),
         None => {
             eprintln!("Error: No filename provided.");
             std::process::exit(1);
         }
-    }
-}
-
-// Initializes the TUI view to view a given filename
-fn start_view(filename: &str) {
-    println!("Opening filename {filename}");
-
-    // Open the file passed in.
-    let content = std::fs::read_to_string(filename).expect("Failed to read the file");
-
-    // Let's iterate through each line and print it with line numbers.
-    for (index, line) in content.lines().enumerate() {
-        println!("{}: {}", index + 1, line);
     }
 }
