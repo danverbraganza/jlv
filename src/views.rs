@@ -53,6 +53,7 @@ impl App {
 }
 
 impl Widget for &App {
+    // This method renders the specific widgets that we need
     fn render(self, area: Rect, buf: &mut Buffer) {
         let title = Line::from(" jlv - {filename} ".bold());
         let block = Block::bordered()
@@ -61,7 +62,10 @@ impl Widget for &App {
 
         let mut str_v: Vec<String> = vec![];
         for record in &self.records {
-            str_v.push(format!("{:#?}", record));
+            str_v.push(match &record.value {
+                Some(value) => format!("{:#?}", value),
+                None => "".to_string(),
+            })
         }
 
         let list = List::new(str_v)
