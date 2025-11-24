@@ -12,7 +12,7 @@ use ratatui::{
     style::{Style, Stylize},
     symbols::border,
     text::{Line, Text},
-    widgets::{Block, List, ListDirection, Paragraph, Widget},
+    widgets::{Block, List, ListDirection, Paragraph, Table, Widget},
 };
 
 use crate::input::records_from_file;
@@ -23,7 +23,10 @@ pub fn start_view(filename: &str) -> io::Result<()> {
 
     // Open the file passed in.
     let records = records_from_file(filename);
-    let a = App { records };
+    let a = App {
+        filename: filename.into(),
+        records,
+    };
 
     color_eyre::install().expect("This should install");
     let terminal = ratatui::init();
@@ -33,6 +36,7 @@ pub fn start_view(filename: &str) -> io::Result<()> {
 }
 
 struct App {
+    filename: Box<str>,
     records: Vec<Record>,
 }
 
@@ -55,7 +59,7 @@ impl App {
 impl Widget for &App {
     // This method renders the specific widgets that we need
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let title = Line::from(" jlv - {filename} ".bold());
+        let title = Line::from(format!(" jlv - {0} ", self.filename).bold());
         let block = Block::bordered()
             .title(title.centered())
             .border_set(border::PLAIN);
