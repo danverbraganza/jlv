@@ -1,7 +1,5 @@
 use std::io;
 
-use color_eyre::Result as cResult;
-
 use crate::model::Record;
 
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
@@ -11,8 +9,8 @@ use ratatui::{
     layout::Rect,
     style::{Style, Stylize},
     symbols::border,
-    text::{Line, Text},
-    widgets::{Block, List, ListDirection, Paragraph, Table, Widget},
+    text::Line,
+    widgets::{Block, Row, Table, Widget},
 };
 
 use crate::input::records_from_file;
@@ -64,22 +62,55 @@ impl Widget for &App {
             .title(title.centered())
             .border_set(border::PLAIN);
 
-        let mut str_v: Vec<String> = vec![];
+        let mut row_v: Vec<Row> = vec![];
         for record in &self.records {
-            str_v.push(match &record.value {
-                Some(value) => format!("{:#?}", value),
-                None => "".to_string(),
+            row_v.push(match &record.value {
+                Some(value) => record.to_row(RowViewType::ObjSimple),
+                None => Row::new(vec![" ", " ", " "]),
             })
         }
 
-        let list = List::new(str_v)
+        // TODO: Set the table columns from the data
+        let table = Table::new(row_v, [20, 20, 20, 20, 20, 20, 20, 20, 20])
             .block(block)
             .style(Style::new().white())
-            .highlight_style(Style::new().italic())
-            .highlight_symbol(">>")
-            .repeat_highlight_symbol(true)
-            .direction(ListDirection::BottomToTop);
+            .row_highlight_style(Style::new().italic())
+            .highlight_symbol(">>");
 
-        list.render(area, buf);
+        table.render(area, buf);
+    }
+}
+
+pub enum RowViewType {
+    // ObjSimple just renders each top-level key as a single cell
+    ObjSimple,
+}
+
+// RowAble is the trait for an object that can be renderded as a Row within a table.
+pub trait RowAble {
+    fn to_row<'a>(&self, r: RowViewType) -> Row<'a>;
+}
+
+impl RowAble for Record {
+    fn to_row<'a>(&self, r: RowViewType) -> Row<'a> {
+        let RowViewType::ObjSimple = r else {
+            panic!("No other RowViewTypes implemented")
+        };
+
+        let mut cells = vec![];
+
+        match &self.value {
+            None => (),
+            Some(value) => match value.as_object() {
+                None => (),
+                Some(object) => {
+                    for (_key, value) in object {
+                        cells.push(format!("{:#}", value))
+                    }
+                }
+            },
+        }
+
+        Row::new(cells)
     }
 }
