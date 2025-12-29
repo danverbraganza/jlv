@@ -2,6 +2,8 @@ use std::io;
 
 use crate::model::Record;
 
+use std::collections::HashMap;
+
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 use ratatui::{
     DefaultTerminal, Frame,
@@ -60,6 +62,17 @@ impl App {
 //
 // This type will _start_ off being read only (initialized once), but then will quickly grow to have the power to
 // read/sample Rows to update itself.
+
+struct ColumnConfig {
+    min_width: i32,
+    // TODO: We'll add max_width when we're sampling.
+    //     max_width: i32,
+    index: i32,
+}
+
+struct TableViewConfig {
+    keys: HashMap<String, ColumnConfig>,
+}
 
 impl Widget for &App {
     // This method renders the specific widgets that we need
