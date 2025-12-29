@@ -46,18 +46,20 @@ struct ColumnConfig {
     index: i32,
 }
 
+// TableViewConfig is the calculated configuration for rendering a table view of Records.
 struct TableViewConfig {
     keys: HashMap<String, ColumnConfig>,
 }
 
 impl TableViewConfig {
-    // Returns the columns in order.
+    // Returns the columns we have seen so far, in order.
     fn ordered_columns(&self) -> Vec<(&String, &ColumnConfig)> {
         let mut cols: Vec<(&String, &ColumnConfig)> = self.keys.iter().collect();
         cols.sort_by_key(|(_k, v)| v.index);
         cols
     }
 
+    // Returns the widths of each column in column order.
     fn widths(&self) -> Vec<u16> {
         let mut widths: Vec<u16> = vec![];
 
@@ -78,6 +80,8 @@ struct App {
 }
 
 impl App {
+    // Creates a new instance of the app. An App will be created using a RecordSource and a Configuration, but for now
+    // we use a Vec<Record> and a standard configuration.
     fn new(filename: Box<str>, records: Vec<Record>) -> Self {
         Self {
             filename,

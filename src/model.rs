@@ -18,3 +18,29 @@ impl Record {
         }
     }
 }
+
+pub trait RecordSource {
+    // Returns all the records is this RecordProvider. In the future we might allow you to slice and paginate.
+    fn records(&self) -> &[Record];
+
+    fn title(&self) -> String;
+
+    fn iter(&self) -> std::slice::Iter<'_, Record> {
+        self.records().iter()
+    }
+}
+
+struct FileRecordSource {
+    title: Box<str>,
+    records: Vec<Record>,
+}
+
+impl RecordSource for FileRecordSource {
+    fn records(&self) -> &[Record] {
+        self.records.as_slice()
+    }
+
+    fn title(&self) -> String {
+        self.title.to_string()
+    }
+}
