@@ -7,11 +7,12 @@ use ratatui::{
     DefaultTerminal, Frame,
     buffer::Buffer,
     layout::Rect,
-    style::{Style, Stylize},
+    style::{Style, Styled, Stylize},
     symbols::border,
     text::Line,
     widgets::{Block, Row, Table, Widget},
 };
+use serde_json::value;
 
 use crate::input::records_from_file;
 
@@ -54,6 +55,12 @@ impl App {
     }
 }
 
+// Lets create a type whose job it is to record: what keys we've seen, how wide they are, and in what order they should
+// be generated.
+//
+// This type will _start_ off being read only (initialized once), but then will quickly grow to have the power to
+// read/sample Rows to update itself.
+
 impl Widget for &App {
     // This method renders the specific widgets that we need
     fn render(self, area: Rect, buf: &mut Buffer) {
@@ -63,15 +70,26 @@ impl Widget for &App {
             .border_set(border::PLAIN);
 
         let mut row_v: Vec<Row> = vec![];
+        let mut header: Vec<String> = vec![];
+
         for record in &self.records {
-            row_v.push(match &record.value {
-                Some(value) => record.to_row(RowViewType::ObjSimple),
-                None => Row::new(vec![" ", " ", " "]),
-            })
+            row_v.push(record.to_row(RowViewType::ObjSimple))
+        }
+
+        for record in &self.records {
+            match record.value.as_ref().and_then(|f| f.as_object()) {
+                None => (),
+                Some(value) => {
+                    for key in value.keys() {
+                        header.push(key.to_string())
+                    }
+                }
+            }
         }
 
         // TODO: Set the table columns from the data
         let table = Table::new(row_v, [20, 20, 20, 20, 20, 20, 20, 20, 20])
+            .header(Row::new(header).set_style(Style::new().bold().bg(ratatui::style::Color::Blue)))
             .block(block)
             .style(Style::new().white())
             .row_highlight_style(Style::new().italic())
@@ -99,16 +117,13 @@ impl RowAble for Record {
 
         let mut cells = vec![];
 
-        match &self.value {
+        match self.value.as_ref().and_then(|f| f.as_object()) {
             None => (),
-            Some(value) => match value.as_object() {
-                None => (),
-                Some(object) => {
-                    for (_key, value) in object {
-                        cells.push(value.to_string())
-                    }
+            Some(object) => {
+                for (_key, value) in object {
+                    cells.push(value.to_string())
                 }
-            },
+            }
         }
 
         Row::new(cells)
