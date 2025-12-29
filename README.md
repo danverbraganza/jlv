@@ -1,7 +1,25 @@
 # JLV: Jsonl Viewer
 
-A Rust tool to easily view JSONL files from a TUI.
+A Command-line tool for easily viewing JSONL files from the terminal. Written in Rust.
 
 Usage:
 
     jlv filename
+
+
+## Planned Features
+
+* Infers table columns to render from received data
+* Renders Table Headers
+* Renders Arrays
+* Renders sub-objects or sub-arrays within rows/columns
+* Sort rows based on command-line arguments
+* Filter rows based on command-line arguments
+* Determine Columns based on command-line arguments
+* Highlighting of Records
+* Pagination of Records
+* Tabular view for details of a particular record
+* Live/Continuous uploading
+* Change sort/filter/project expressions on the fly
+
+Fin.
