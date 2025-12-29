@@ -2,6 +2,11 @@
 
 A Command-line tool for easily viewing JSONL files from the terminal. Written in Rust.
 
+JLV supports the following features
+
+* Infers table columns to render from received data
+* Renders Table Headers
+
 Usage:
 
     jlv filename
@@ -9,8 +14,6 @@ Usage:
 
 ## Planned Features
 
-* Infers table columns to render from received data
-* Renders Table Headers
 * Renders Arrays
 * Renders sub-objects or sub-arrays within rows/columns
 * Sort rows based on command-line arguments

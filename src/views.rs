@@ -14,7 +14,6 @@ use ratatui::{
     text::Line,
     widgets::{Block, Row, Table, Widget},
 };
-use serde_json::value;
 
 use crate::input::records_from_file;
 
@@ -24,37 +23,14 @@ pub fn start_view(filename: &str) -> io::Result<()> {
 
     // Open the file passed in.
     let records = records_from_file(filename);
-    let a = App {
-        filename: filename.into(),
-        records,
-    };
+    let mut a = App::new(filename.into(), records);
+    a.calculate_table_view_config();
 
     color_eyre::install().expect("This should install");
     let terminal = ratatui::init();
     let result = a.run(terminal);
     ratatui::restore();
     result
-}
-
-struct App {
-    filename: Box<str>,
-    records: Vec<Record>,
-}
-
-impl App {
-    // Starts the view, and runs until keypress.
-    fn run(self, mut terminal: DefaultTerminal) -> io::Result<()> {
-        loop {
-            terminal.draw(|frame| self.draw(frame))?;
-            if matches!(event::read()?, Event::Key(_)) {
-                break Ok(());
-            }
-        }
-    }
-
-    fn draw(&self, frame: &mut Frame) {
-        frame.render_widget(self, frame.area());
-    }
 }
 
 // Lets create a type whose job it is to record: what keys we've seen, how wide they are, and in what order they should
@@ -72,6 +48,102 @@ struct ColumnConfig {
 
 struct TableViewConfig {
     keys: HashMap<String, ColumnConfig>,
+}
+
+impl TableViewConfig {
+    // Returns the columns in order.
+    fn ordered_columns(&self) -> Vec<(&String, &ColumnConfig)> {
+        let mut cols: Vec<(&String, &ColumnConfig)> = self.keys.iter().collect();
+        cols.sort_by_key(|(_k, v)| v.index);
+        cols
+    }
+
+    fn widths(&self) -> Vec<u16> {
+        let mut widths: Vec<u16> = vec![];
+
+        for index in self.ordered_columns() {
+            widths.push(index.1.min_width as u16);
+        }
+
+        widths
+    }
+}
+
+struct App {
+    filename: Box<str>,
+    records: Vec<Record>,
+
+    // This is used to cache/store the calculated table view configuration.
+    table_view_config: Option<TableViewConfig>,
+}
+
+impl App {
+    fn new(filename: Box<str>, records: Vec<Record>) -> Self {
+        Self {
+            filename,
+            records,
+            table_view_config: None,
+        }
+    }
+
+    // Starts the view, and runs until keypress.
+    fn run(self, mut terminal: DefaultTerminal) -> io::Result<()> {
+        loop {
+            terminal.draw(|frame| self.draw(frame))?;
+            if matches!(event::read()?, Event::Key(_)) {
+                break Ok(());
+            }
+        }
+    }
+
+    fn draw(&self, frame: &mut Frame) {
+        frame.render_widget(self, frame.area());
+    }
+
+    // Calculates the table view configuration, if it hasn't already been calculated.
+    fn calculate_table_view_config(&mut self) -> &TableViewConfig {
+        self.table_view_config.get_or_insert_with(|| {
+            let mut table_view_config: HashMap<String, ColumnConfig> = HashMap::new();
+            for record in &self.records {
+                match record.value.as_ref().and_then(|f| f.as_object()) {
+                    None => (),
+                    Some(value) => {
+                        for (key, value) in value {
+                            let next_index = table_view_config.len() as i32;
+                            let entry =
+                                table_view_config
+                                    .entry(key.to_string())
+                                    .or_insert(ColumnConfig {
+                                        min_width: 0,
+                                        index: next_index,
+                                    });
+
+                            let value_len = value.to_string().len() as i32;
+                            if value_len > entry.min_width {
+                                entry.min_width = value_len;
+                            }
+
+                            // TODO: Optimize this, we should be able to only calculate this once.
+                            let key_len = key.to_string().len() as i32;
+                            if key_len > entry.min_width {
+                                entry.min_width = key_len;
+                            }
+                        }
+                    }
+                }
+            }
+
+            TableViewConfig {
+                keys: table_view_config,
+            }
+        })
+    }
+
+    fn get_table_view_config(&self) -> &TableViewConfig {
+        self.table_view_config
+            .as_ref()
+            .expect("TableViewConfig should have been calculated")
+    }
 }
 
 impl Widget for &App {
@@ -101,7 +173,7 @@ impl Widget for &App {
         }
 
         // TODO: Set the table columns from the data
-        let table = Table::new(row_v, [20, 20, 20, 20, 20, 20, 20, 20, 20])
+        let table = Table::new(row_v, self.get_table_view_config().widths())
             .header(Row::new(header).set_style(Style::new().bold().bg(ratatui::style::Color::Blue)))
             .block(block)
             .style(Style::new().white())
