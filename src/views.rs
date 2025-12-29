@@ -105,7 +105,7 @@ impl RowAble for Record {
                 None => (),
                 Some(object) => {
                     for (_key, value) in object {
-                        cells.push(format!("{:#}", value))
+                        cells.push(value.to_string())
                     }
                 }
             },
