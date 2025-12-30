@@ -1,4 +1,4 @@
-use std::{error, io};
+use std::io;
 
 use crate::model::{FileRecordSource, Record, RecordSource};
 
@@ -17,7 +17,7 @@ use ratatui::{
 
 // Initializes the TUI view to view a given filename
 pub fn start_view(filename: &str) -> Result<(), io::Error> {
-    let file_record_source = FileRecordSource::open(filename.into())?;
+    let file_record_source = FileRecordSource::open(filename)?;
 
     // Open the file passed in.
     let mut a = App::new(Box::new(file_record_source));
@@ -102,7 +102,7 @@ impl App {
     fn calculate_table_view_config(&mut self) -> &TableViewConfig {
         self.table_view_config.get_or_insert_with(|| {
             let mut table_view_config: HashMap<String, ColumnConfig> = HashMap::new();
-            for record in self.record_source.records() {
+            for record in self.record_source.iter() {
                 match record.value.as_ref().and_then(|f| f.as_object()) {
                     None => (),
                     Some(value) => {
@@ -155,11 +155,11 @@ impl Widget for &App {
         let mut row_v: Vec<Row> = vec![];
         let mut header: Vec<String> = vec![];
 
-        for record in self.record_source.records() {
+        for record in self.record_source.iter() {
             row_v.push(record.to_row(RowViewType::ObjSimple))
         }
 
-        for record in self.record_source.records() {
+        for record in self.record_source.iter() {
             match record.value.as_ref().and_then(|f| f.as_object()) {
                 None => (),
                 Some(value) => {
