@@ -147,9 +147,8 @@ impl App {
 impl Widget for &App {
     // This method renders the specific widgets that we need
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let title = Line::from(format!(" jlv - {0} ", self.record_source.title()).bold());
         let block = Block::bordered()
-            .title(title.centered())
+            .title(Line::from(format!(" jlv - {0} ", self.record_source.title()).bold()).centered())
             .border_set(border::PLAIN);
 
         let mut row_v: Vec<Row> = vec![];

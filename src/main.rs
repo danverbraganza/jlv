@@ -4,7 +4,7 @@ use clap::{Parser, command};
 
 mod input;
 mod model;
-mod views;
+mod ui;
 
 #[derive(Parser, Debug)]
 #[command(name = "jlv", version, about = "JsonL viewer", long_about = None)]
@@ -30,7 +30,7 @@ fn main() -> io::Result<()> {
     let filename = cli.filename.or(cli.filename_flag);
 
     match filename {
-        Some(fname) => views::start_view(&fname),
+        Some(fname) => ui::view::start_view(&fname),
         None => {
             eprintln!("Error: No filename provided.");
             std::process::exit(1);
