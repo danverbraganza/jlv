@@ -1,10 +1,11 @@
 // The input module deals with loading a file/stdin/whatever, and producing Records
 
+use std::io::Error;
+
 use crate::model::Record;
 
-pub fn records_from_file(filename: &str) -> Vec<Record> {
-    // TODO(danver): Make this not spool
-    let content = std::fs::read_to_string(filename).expect("Failed to read the file");
+pub fn records_from_file(filename: &str) -> Result<Vec<Record>, Error> {
+    let content = std::fs::read_to_string(filename)?;
 
     let mut output = vec![];
 
@@ -12,5 +13,5 @@ pub fn records_from_file(filename: &str) -> Vec<Record> {
         output.push(Record::from_str(i, line));
     }
 
-    output
+    Ok(output)
 }

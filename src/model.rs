@@ -1,4 +1,8 @@
+use std::io::Error;
+
 use serde_json::Value;
+
+use crate::input::records_from_file;
 
 #[derive(Debug)]
 pub struct Record {
@@ -30,9 +34,21 @@ pub trait RecordSource {
     }
 }
 
-struct FileRecordSource {
+pub struct FileRecordSource {
     title: Box<str>,
     records: Vec<Record>,
+}
+
+impl FileRecordSource {
+    pub fn open(filename: &str) -> Result<FileRecordSource, Error> {
+        println!("Opening filename {filename}");
+        let records = records_from_file(filename)?;
+
+        Ok(Self {
+            title: filename.into(),
+            records,
+        })
+    }
 }
 
 impl RecordSource for FileRecordSource {

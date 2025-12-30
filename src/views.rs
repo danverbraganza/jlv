@@ -1,6 +1,6 @@
-use std::io;
+use std::{error, io};
 
-use crate::model::Record;
+use crate::model::{FileRecordSource, Record, RecordSource};
 
 use std::collections::HashMap;
 
@@ -15,15 +15,12 @@ use ratatui::{
     widgets::{Block, Row, Table, Widget},
 };
 
-use crate::input::records_from_file;
-
 // Initializes the TUI view to view a given filename
-pub fn start_view(filename: &str) -> io::Result<()> {
-    println!("Opening filename {filename}");
+pub fn start_view(filename: &str) -> Result<(), io::Error> {
+    let file_record_source = FileRecordSource::open(filename.into())?;
 
     // Open the file passed in.
-    let records = records_from_file(filename);
-    let mut a = App::new(filename.into(), records);
+    let mut a = App::new(Box::new(file_record_source));
     a.calculate_table_view_config();
 
     color_eyre::install().expect("This should install");
@@ -72,20 +69,17 @@ impl TableViewConfig {
 }
 
 struct App {
-    filename: Box<str>,
-    records: Vec<Record>,
-
+    record_source: Box<dyn RecordSource>,
     // This is used to cache/store the calculated table view configuration.
     table_view_config: Option<TableViewConfig>,
 }
 
 impl App {
     // Creates a new instance of the app. An App will be created using a RecordSource and a Configuration, but for now
-    // we use a Vec<Record> and a standard configuration.
-    fn new(filename: Box<str>, records: Vec<Record>) -> Self {
+    // we use a RecordSource and a standard configuration.
+    fn new(record_source: Box<dyn RecordSource>) -> Self {
         Self {
-            filename,
-            records,
+            record_source,
             table_view_config: None,
         }
     }
@@ -108,7 +102,7 @@ impl App {
     fn calculate_table_view_config(&mut self) -> &TableViewConfig {
         self.table_view_config.get_or_insert_with(|| {
             let mut table_view_config: HashMap<String, ColumnConfig> = HashMap::new();
-            for record in &self.records {
+            for record in self.record_source.records() {
                 match record.value.as_ref().and_then(|f| f.as_object()) {
                     None => (),
                     Some(value) => {
@@ -153,7 +147,7 @@ impl App {
 impl Widget for &App {
     // This method renders the specific widgets that we need
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let title = Line::from(format!(" jlv - {0} ", self.filename).bold());
+        let title = Line::from(format!(" jlv - {0} ", self.record_source.title()).bold());
         let block = Block::bordered()
             .title(title.centered())
             .border_set(border::PLAIN);
@@ -161,11 +155,11 @@ impl Widget for &App {
         let mut row_v: Vec<Row> = vec![];
         let mut header: Vec<String> = vec![];
 
-        for record in &self.records {
+        for record in self.record_source.records() {
             row_v.push(record.to_row(RowViewType::ObjSimple))
         }
 
-        for record in &self.records {
+        for record in self.record_source.records() {
             match record.value.as_ref().and_then(|f| f.as_object()) {
                 None => (),
                 Some(value) => {
