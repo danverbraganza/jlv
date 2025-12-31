@@ -9,9 +9,9 @@ use ratatui::{
     buffer::Buffer,
     layout::{Margin, Offset, Rect},
     style::{Style, Styled, Stylize},
-    symbols::border,
+    symbols::{self, border},
     text::Line,
-    widgets::{Block, Row, Table, Widget},
+    widgets::{Block, List, Row, Table, Tabs, Widget},
 };
 
 use crate::{
@@ -65,8 +65,7 @@ impl Widget for &App<'_> {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let main_block = Block::bordered()
             .title(Line::from(format!(" jlv - {0} ", self.record_source.title()).bold()).centered())
-            .border_set(border::PLAIN);
-        main_block.render(area, buf);
+            .border_set(border::DOUBLE);
 
         // TODO: Put the view Muxer here.
         let mut table_view = TableView::new(self.record_source.as_ref());
@@ -75,5 +74,21 @@ impl Widget for &App<'_> {
             area.inner(Margin::new(1, 3)).offset(Offset { x: 0, y: -2 }),
             buf,
         );
+
+        // TODO: Derive the Tabs
+        Tabs::new(vec!["F1", "F2", "F10"])
+            .block(Block::bordered().border_set(border::PLAIN))
+            .divider(symbols::DOT)
+            .render(
+                Rect {
+                    x: area.x,
+                    y: area.bottom() - 3,
+                    width: area.width,
+                    height: 3,
+                },
+                buf,
+            );
+
+        main_block.render(area, buf);
     }
 }
