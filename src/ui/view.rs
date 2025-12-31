@@ -54,6 +54,7 @@ impl App<'_> {
                     code: KeyCode::Char('q') | KeyCode::Char('Q'),
                     ..
                 }) => break Ok(()),
+                Event::Key(key) => self.handle_keypress(key),
                 _ => (),
             }
         }
@@ -62,6 +63,8 @@ impl App<'_> {
     fn draw(&self, frame: &mut Frame) {
         frame.render_widget(self, frame.area());
     }
+
+    fn handle_keypress(&self, key: KeyEvent) {}
 }
 
 impl Widget for &App<'_> {

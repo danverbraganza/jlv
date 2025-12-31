@@ -12,7 +12,7 @@ use ratatui::{
     buffer::Buffer,
     layout::Rect,
     style::{Style, Styled, Stylize},
-    widgets::{Block, Row, Table, Widget},
+    widgets::{Block, Row, StatefulWidget, Table, TableState, Widget},
 };
 
 use crate::model::{Record, RecordSource};
@@ -84,6 +84,7 @@ impl TableViewConfig {
 pub struct TableView<'a> {
     record_source: &'a dyn RecordSource,
     table_view_config: Option<TableViewConfig>,
+    table_state: TableState,
 }
 
 impl<'a> TableView<'a> {
@@ -91,39 +92,8 @@ impl<'a> TableView<'a> {
         TableView {
             table_view_config: None,
             record_source,
+            table_state: TableState::default(),
         }
-    }
-
-    pub fn render(self, area: Rect, buf: &mut Buffer) {
-        let mut row_v: Vec<Row> = vec![];
-        let mut header: Vec<String> = vec![];
-
-        for record in self.record_source.iter() {
-            row_v.push(record.to_row(RowViewType::ObjSimple))
-        }
-
-        for record in self.record_source.iter() {
-            match record.value.as_ref().and_then(|f| f.as_object()) {
-                None => (),
-                Some(value) => {
-                    for key in value.keys() {
-                        header.push(key.to_string())
-                    }
-                }
-            }
-        }
-
-        Table::new(
-            row_v,
-            self.table_view_config
-                .expect("Widths should have been calculated")
-                .widths(),
-        )
-        .header(Row::new(header).set_style(Style::new().bold().bg(ratatui::style::Color::Blue)))
-        .style(Style::new().white())
-        .row_highlight_style(Style::new().italic())
-        .highlight_symbol(">>")
-        .render(area, buf);
     }
 
     // Calculates the column configuration of this view, if it has not been already.
@@ -163,5 +133,44 @@ impl<'a> TableView<'a> {
                 columns: table_view_config,
             }
         })
+    }
+
+    pub fn render(&mut self, area: Rect, buf: &mut Buffer) {
+        let mut row_v: Vec<Row> = vec![];
+        let mut header: Vec<String> = vec![];
+
+        for record in self.record_source.iter() {
+            row_v.push(record.to_row(RowViewType::ObjSimple))
+        }
+
+        for record in self.record_source.iter() {
+            match record.value.as_ref().and_then(|f| f.as_object()) {
+                None => (),
+                Some(value) => {
+                    for key in value.keys() {
+                        header.push(key.to_string())
+                    }
+                }
+            }
+        }
+
+        self.table_state = self.table_state.clone().with_selected(3);
+
+        StatefulWidget::render(
+            Table::new(
+                row_v,
+                self.table_view_config
+                    .as_ref()
+                    .expect("Widths should have been calculated")
+                    .widths(),
+            )
+            .header(Row::new(header).set_style(Style::new().bold().bg(ratatui::style::Color::Blue)))
+            .style(Style::new().white())
+            .row_highlight_style(Style::new().bg(ratatui::style::Color::Magenta))
+            .highlight_symbol(">>"),
+            area,
+            buf,
+            &mut self.table_state,
+        );
     }
 }
