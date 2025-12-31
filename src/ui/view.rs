@@ -49,8 +49,12 @@ impl App<'_> {
     fn run(self, mut terminal: DefaultTerminal) -> io::Result<()> {
         loop {
             terminal.draw(|frame| self.draw(frame))?;
-            if matches!(event::read()?, Event::Key(_)) {
-                break Ok(());
+            match event::read()? {
+                Event::Key(KeyEvent {
+                    code: KeyCode::Char('q') | KeyCode::Char('Q'),
+                    ..
+                }) => break Ok(()),
+                _ => (),
             }
         }
     }
@@ -76,7 +80,7 @@ impl Widget for &App<'_> {
         );
 
         // TODO: Derive the Tabs
-        Tabs::new(vec!["F1", "F2", "F10"])
+        Tabs::new(vec!["F1", "F2", "F10", "Exit (q)"])
             .block(Block::bordered().border_set(border::PLAIN))
             .divider(symbols::DOT)
             .render(
