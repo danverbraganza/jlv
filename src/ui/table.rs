@@ -6,7 +6,7 @@
 // This type will _start_ off being read only (initialized once), but then will quickly grow to have the power to
 // read/sample Rows to update itself.
 
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 use ratatui::{
     buffer::Buffer,
@@ -81,14 +81,14 @@ impl TableViewConfig {
 }
 
 // Table view is a Widget that renders a slice of Records as Rows, according to some configuration.
-pub struct TableView<'a> {
-    record_source: &'a dyn RecordSource,
+pub struct TableView {
+    record_source: Arc<Box<dyn RecordSource>>,
     table_view_config: Option<TableViewConfig>,
     table_state: TableState,
 }
 
-impl<'a> TableView<'a> {
-    pub fn new(record_source: &'a dyn RecordSource) -> Self {
+impl TableView {
+    pub fn new(record_source: Arc<Box<dyn RecordSource>>) -> Self {
         TableView {
             table_view_config: None,
             record_source,

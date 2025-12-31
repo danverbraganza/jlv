@@ -1,7 +1,7 @@
 // Overall interface of the View for this App.
 
-use std::collections::HashMap;
 use std::io;
+use std::{clone::Clone, sync::Arc};
 
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 use ratatui::{
@@ -33,16 +33,22 @@ pub fn start_view(filename: &str) -> Result<(), io::Error> {
     result
 }
 
-struct App<'app> {
-    record_source: Box<dyn RecordSource + 'app>,
+struct App {
+    record_source: Arc<Box<dyn RecordSource>>,
     // This is used to cache/store the calculated table view configuration.
+    table_view: TableView,
 }
 
-impl App<'_> {
+impl App {
     // Creates a new instance of the app. An App will be created using a RecordSource and a Configuration, but for now
     // we use a RecordSource and a standard configuration.
     fn new(record_source: Box<dyn RecordSource>) -> Self {
-        Self { record_source }
+        let r = Arc::new(record_source);
+        let s = r.clone();
+        Self {
+            record_source: r,
+            table_view: TableView::new(s),
+        }
     }
 
     // Starts the view, and runs until keypress.
@@ -67,7 +73,7 @@ impl App<'_> {
     fn handle_keypress(&self, key: KeyEvent) {}
 }
 
-impl Widget for &App<'_> {
+impl Widget for &App {
     // This method renders the specific widgets that we need
     fn render(self, area: Rect, buf: &mut Buffer) {
         let main_block = Block::bordered()
@@ -75,7 +81,7 @@ impl Widget for &App<'_> {
             .border_set(border::DOUBLE);
 
         // TODO: Put the view Muxer here.
-        let mut table_view = TableView::new(self.record_source.as_ref());
+        let mut table_view = TableView::new(self.record_source.clone());
         table_view.update_config();
         table_view.render(
             area.inner(Margin::new(1, 3)).offset(Offset { x: 0, y: -2 }),
