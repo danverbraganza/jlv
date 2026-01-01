@@ -1,10 +1,11 @@
 // Overall interface of the View for this App.
 
+use std::clone::Clone;
 use std::io;
-use std::{clone::Clone, sync::Arc};
+use std::rc::Rc;
 
 use crossterm::event::{self, Event, KeyCode, KeyEvent};
-use ratatui::widgets::StatefulWidget;
+
 use ratatui::{
     DefaultTerminal, Frame,
     buffer::Buffer,
@@ -35,7 +36,7 @@ pub fn start_view(filename: &str) -> Result<(), io::Error> {
 }
 
 struct App {
-    record_source: Arc<Box<dyn RecordSource>>,
+    record_source: Rc<Box<dyn RecordSource>>,
     // This is used to cache/store the calculated table view configuration.
     table_view: TableView,
 }
@@ -44,7 +45,7 @@ impl App {
     // Creates a new instance of the app. An App will be created using a RecordSource and a Configuration, but for now
     // we use a RecordSource and a standard configuration.
     fn new(record_source: Box<dyn RecordSource>) -> Self {
-        let r = Arc::new(record_source);
+        let r = Rc::new(record_source);
         let s = r.clone();
 
         let mut table_view = TableView::new(s);
