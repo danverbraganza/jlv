@@ -165,8 +165,7 @@ impl TableView {
             )
             .header(Row::new(header).set_style(Style::new().bold().bg(ratatui::style::Color::Blue)))
             .style(Style::new().white())
-            .row_highlight_style(Style::new().bg(ratatui::style::Color::Magenta))
-            .highlight_symbol(">>"),
+            .row_highlight_style(Style::new().bg(ratatui::style::Color::Magenta)),
             area,
             buf,
             &mut self.table_state,
