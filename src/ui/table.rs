@@ -8,11 +8,12 @@
 
 use std::{collections::HashMap, sync::Arc};
 
+use crossterm::event::{Event, KeyCode, KeyEvent};
 use ratatui::{
     buffer::Buffer,
     layout::Rect,
     style::{Style, Styled, Stylize},
-    widgets::{Block, Row, StatefulWidget, Table, TableState, Widget},
+    widgets::{Row, StatefulWidget, Table, TableState},
 };
 
 use crate::model::{Record, RecordSource};
@@ -84,7 +85,7 @@ impl TableViewConfig {
 pub struct TableView {
     record_source: Arc<Box<dyn RecordSource>>,
     table_view_config: Option<TableViewConfig>,
-    table_state: TableState,
+    pub table_state: TableState,
 }
 
 impl TableView {
@@ -92,7 +93,7 @@ impl TableView {
         TableView {
             table_view_config: None,
             record_source,
-            table_state: TableState::default(),
+            table_state: TableState::default().with_selected(3),
         }
     }
 
@@ -154,8 +155,6 @@ impl TableView {
             }
         }
 
-        self.table_state = self.table_state.clone().with_selected(3);
-
         StatefulWidget::render(
             Table::new(
                 row_v,
@@ -172,5 +171,31 @@ impl TableView {
             buf,
             &mut self.table_state,
         );
+    }
+
+    pub fn handle_keypress(&mut self, key: KeyEvent) {
+        match key {
+            KeyEvent {
+                code: crossterm::event::KeyCode::Down,
+                ..
+            } => {
+                self.table_state = self
+                    .table_state
+                    .clone()
+                    .with_selected(self.table_state.selected().unwrap_or(0) + 1)
+            }
+            KeyEvent {
+                code: crossterm::event::KeyCode::Up,
+                ..
+            } => {
+                let old_idx = self.table_state.selected().unwrap_or(10);
+                let new_idx = if old_idx == 0 { 0 } else { old_idx - 1 };
+
+                self.table_state = self.table_state.clone().with_selected(new_idx);
+
+                // print!("{0:#?}", self.table_state);
+            }
+            _ => (),
+        }
     }
 }

@@ -3,15 +3,16 @@
 use std::io;
 use std::{clone::Clone, sync::Arc};
 
-use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
+use crossterm::event::{self, Event, KeyCode, KeyEvent};
+use ratatui::widgets::StatefulWidget;
 use ratatui::{
     DefaultTerminal, Frame,
     buffer::Buffer,
     layout::{Margin, Offset, Rect},
-    style::{Style, Styled, Stylize},
+    style::Stylize,
     symbols::{self, border},
     text::Line,
-    widgets::{Block, List, Row, Table, Tabs, Widget},
+    widgets::{Block, Tabs, Widget},
 };
 
 use crate::{
@@ -24,7 +25,7 @@ pub fn start_view(filename: &str) -> Result<(), io::Error> {
     let file_record_source = FileRecordSource::open(filename)?;
 
     // Open the file passed in.
-    let a = App::new(Box::new(file_record_source));
+    let mut a = App::new(Box::new(file_record_source));
 
     color_eyre::install().expect("This should install");
     let terminal = ratatui::init();
@@ -45,16 +46,22 @@ impl App {
     fn new(record_source: Box<dyn RecordSource>) -> Self {
         let r = Arc::new(record_source);
         let s = r.clone();
+
+        let mut table_view = TableView::new(s);
+
+        table_view.update_config();
+
         Self {
             record_source: r,
-            table_view: TableView::new(s),
+            table_view,
         }
     }
 
     // Starts the view, and runs until keypress.
-    fn run(self, mut terminal: DefaultTerminal) -> io::Result<()> {
+    fn run(&mut self, mut terminal: DefaultTerminal) -> io::Result<()> {
         loop {
             terminal.draw(|frame| self.draw(frame))?;
+            // print!("drew {0:#?}", self.table_view.table_state);
             match event::read()? {
                 Event::Key(KeyEvent {
                     code: KeyCode::Char('q') | KeyCode::Char('Q'),
@@ -66,24 +73,23 @@ impl App {
         }
     }
 
-    fn draw(&self, frame: &mut Frame) {
+    fn draw(&mut self, frame: &mut Frame) {
         frame.render_widget(self, frame.area());
     }
 
-    fn handle_keypress(&self, key: KeyEvent) {}
+    fn handle_keypress(&mut self, key: KeyEvent) {
+        self.table_view.handle_keypress(key);
+    }
 }
 
-impl Widget for &App {
+impl Widget for &mut App {
     // This method renders the specific widgets that we need
     fn render(self, area: Rect, buf: &mut Buffer) {
         let main_block = Block::bordered()
             .title(Line::from(format!(" jlv - {0} ", self.record_source.title()).bold()).centered())
             .border_set(border::DOUBLE);
 
-        // TODO: Put the view Muxer here.
-        let mut table_view = TableView::new(self.record_source.clone());
-        table_view.update_config();
-        table_view.render(
+        self.table_view.render(
             area.inner(Margin::new(1, 3)).offset(Offset { x: 0, y: -2 }),
             buf,
         );
