@@ -21,6 +21,8 @@ use crate::{
     ui::table::TableView,
 };
 
+use super::mux::Mux;
+
 // Initializes the TUI view to view a given filename
 pub fn start_view(filename: &str) -> Result<(), io::Error> {
     let file_record_source = FileRecordSource::open(filename)?;
@@ -38,7 +40,7 @@ pub fn start_view(filename: &str) -> Result<(), io::Error> {
 struct App {
     record_source: Rc<Box<dyn RecordSource>>,
     // This is used to cache/store the calculated table view configuration.
-    table_view: TableView,
+    mux: Mux,
 }
 
 impl App {
@@ -52,9 +54,11 @@ impl App {
 
         table_view.update_config();
 
+        let mux = Mux::new(table_view);
+
         Self {
             record_source: r,
-            table_view,
+            mux,
         }
     }
 
@@ -79,7 +83,7 @@ impl App {
     }
 
     fn handle_keypress(&mut self, key: KeyEvent) {
-        self.table_view.handle_keypress(key);
+        self.mux.handle_keypress(key);
     }
 }
 
@@ -90,7 +94,7 @@ impl Widget for &mut App {
             .title(Line::from(format!(" jlv - {0} ", self.record_source.title()).bold()).centered())
             .border_set(border::DOUBLE);
 
-        self.table_view.render(
+        self.mux.render(
             area.inner(Margin::new(1, 3)).offset(Offset { x: 0, y: -2 }),
             buf,
         );
