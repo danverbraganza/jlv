@@ -35,7 +35,7 @@ impl Mux {
     pub fn handle_keypress(&mut self, key: KeyEvent) {
         match key {
             KeyEvent {
-                code: crossterm::event::KeyCode::Enter,
+                code: KeyCode::Enter,
                 ..
             } => {
                 if self.on_table() {
@@ -46,16 +46,16 @@ impl Mux {
                 }
             }
             KeyEvent {
-                code: KeyCode::F(8),
+                code: KeyCode::F(8) | KeyCode::Char('n'),
                 ..
             } => self.switch_tab(TabDestination::Forward),
             KeyEvent {
-                code: KeyCode::F(6),
+                code: KeyCode::F(6) | KeyCode::Char('b'),
                 ..
             } => self.switch_tab(TabDestination::Backward),
 
             KeyEvent {
-                code: KeyCode::F(5),
+                code: KeyCode::F(5) | KeyCode::Char('h'),
                 ..
             } => self.switch_tab(TabDestination::Home),
 
@@ -110,7 +110,10 @@ impl Widget for &mut Mux {
         if self.on_table() {
             self.table_view.render(inner_area, buf);
         } else {
-            self.possible_tabs.last().unwrap().render(inner_area, buf)
+            self.possible_tabs
+                .get(self.current_index as usize)
+                .unwrap()
+                .render(inner_area, buf)
         }
 
         let mut v: Vec<String> = vec![
