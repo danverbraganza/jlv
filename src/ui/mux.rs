@@ -1,6 +1,11 @@
 // Mux is the multiplexer that allows us to add windows, and draws the current window.
-use crossterm::event::KeyEvent;
-use ratatui::{buffer::Buffer, layout::Rect, widgets::Widget};
+use crossterm::event::{KeyCode, KeyEvent};
+use ratatui::{
+    buffer::Buffer,
+    layout::{Margin, Offset, Rect},
+    symbols::{self, border},
+    widgets::{Block, Tabs, Widget},
+};
 
 use crate::model::Record;
 
@@ -12,9 +17,10 @@ pub struct Mux {
     current_index: i16,
 }
 
-pub enum TabDirection {
+pub enum TabDestination {
     Forward,
     Backward,
+    Home,
 }
 
 impl Mux {
@@ -39,6 +45,19 @@ impl Mux {
                     self.close_current_tab()
                 }
             }
+            KeyEvent {
+                code: KeyCode::F(8),
+                ..
+            } => self.switch_tab(TabDestination::Forward),
+            KeyEvent {
+                code: KeyCode::F(6),
+                ..
+            } => self.switch_tab(TabDestination::Backward),
+
+            KeyEvent {
+                code: KeyCode::F(5),
+                ..
+            } => self.switch_tab(TabDestination::Home),
 
             _ => self.table_view.handle_keypress(key),
         }
@@ -59,7 +78,7 @@ impl Mux {
         }
     }
 
-    pub fn num_tabs(self) -> usize {
+    pub fn num_tabs(&self) -> usize {
         1 + self.possible_tabs.len()
     }
 
@@ -67,28 +86,59 @@ impl Mux {
         self.current_index == -1 || self.current_index - 1 > self.possible_tabs.len() as i16
     }
 
-    pub fn switch_tab(&mut self, direction: TabDirection) {
+    pub fn switch_tab(&mut self, direction: TabDestination) {
         match direction {
-            TabDirection::Forward => {
+            TabDestination::Forward => {
                 if self.current_index < self.possible_tabs.len() as i16 - 1 {
                     self.current_index += 1
                 }
             }
-            TabDirection::Backward => {
+            TabDestination::Backward => {
                 if self.current_index > -1 {
                     self.current_index -= 1
                 }
             }
+            TabDestination::Home => self.current_index = -1,
         }
     }
 }
 
 impl Widget for &mut Mux {
     fn render(self, area: Rect, buf: &mut Buffer) {
+        let inner_area = area.inner(Margin::new(1, 3)).offset(Offset { x: 0, y: -2 });
+
         if self.on_table() {
-            self.table_view.render(area, buf);
+            self.table_view.render(inner_area, buf);
         } else {
-            self.possible_tabs.last().unwrap().render(area, buf)
+            self.possible_tabs.last().unwrap().render(inner_area, buf)
         }
+
+        let mut v: Vec<String> = vec![
+            "F1".to_string(),
+            "Prev (F6)".to_string(),
+            "Next (F8)".to_string(),
+            "Table (F5)".to_string(),
+        ];
+
+        let x = self.num_tabs() - 1;
+        for i in 0..x {
+            v.push(format!("Detail {}", i + 1));
+        }
+
+        v.push("Exit (q)".to_string());
+
+        Tabs::new(v)
+            .block(Block::bordered().border_set(border::PLAIN))
+            .divider(symbols::DOT)
+            .select((self.current_index + 4).try_into().unwrap_or(4))
+            .render(
+                Rect {
+                    x: area.x,
+                    y: area.bottom() - 3,
+                    width: area.width,
+                    height: 3,
+                },
+                buf,
+            );
     }
 }

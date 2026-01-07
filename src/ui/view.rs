@@ -93,24 +93,7 @@ impl Widget for &mut App {
             .title(Line::from(format!(" jlv - {0} ", self.record_source.title()).bold()).centered())
             .border_set(border::DOUBLE);
 
-        self.mux.render(
-            area.inner(Margin::new(1, 3)).offset(Offset { x: 0, y: -2 }),
-            buf,
-        );
-
-        // TODO: Derive the Tabs
-        Tabs::new(vec!["F1", "F2", "F10", "Exit (q)"])
-            .block(Block::bordered().border_set(border::PLAIN))
-            .divider(symbols::DOT)
-            .render(
-                Rect {
-                    x: area.x,
-                    y: area.bottom() - 3,
-                    width: area.width,
-                    height: 3,
-                },
-                buf,
-            );
+        self.mux.render(area, buf);
 
         main_block.render(area, buf);
     }
