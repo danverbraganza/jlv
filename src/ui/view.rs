@@ -66,7 +66,6 @@ impl App {
     fn run(&mut self, mut terminal: DefaultTerminal) -> io::Result<()> {
         loop {
             terminal.draw(|frame| self.draw(frame))?;
-            // print!("drew {0:#?}", self.table_view.table_state);
             match event::read()? {
                 Event::Key(KeyEvent {
                     code: KeyCode::Char('q') | KeyCode::Char('Q'),

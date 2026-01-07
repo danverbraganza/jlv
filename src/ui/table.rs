@@ -198,3 +198,10 @@ impl TableView {
         }
     }
 }
+
+impl TableView {
+    // TODO: Make this properly non-copy because Record is immutable
+    pub fn selected_record(&self) -> Record {
+        self.record_source.records()[self.table_state.selected().unwrap_or(0)].clone()
+    }
+}

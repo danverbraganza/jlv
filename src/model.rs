@@ -4,7 +4,7 @@ use serde_json::Value;
 
 use crate::input::records_from_file;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Record {
     pub seq_no: usize,
     pub raw: String,
@@ -19,6 +19,14 @@ impl Record {
             raw: str.to_string(),
             // Derserialize the JSON value
             value: serde_json::from_str(str).ok(),
+        }
+    }
+
+    pub fn copy(self) -> Self {
+        Self {
+            seq_no: self.seq_no,
+            raw: self.raw.clone(),
+            value: self.value.clone(),
         }
     }
 }
